@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AirPox</title>
+<style>
+:root{--bg:#f7fbfa;--fg:#10283a;--mut:#5b7083;--card:#fff;--line:#dbe5ea;--brand:#1f7a6b;--brand2:#14566b;--good:#3aa655;--mod:#f5b82e;--poor:#e5484d;--vp:#7a1f5c;--mapbg:#eef3f1;--road:#fff;--water:#bcd9f0;--park:#cfe8c8;--chip:#e6f1ee;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1922;--fg:#e8f1f5;--mut:#9ab0be;--card:#14252f;--line:#243945;--brand:#4fc3ad;--brand2:#7fc8e0;--mapbg:#14232c;--road:#22343f;--water:#1b3a52;--park:#1d3a2b;--chip:#1b3340;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1922;--fg:#e8f1f5;--mut:#9ab0be;--card:#14252f;--line:#243945;--brand:#4fc3ad;--brand2:#7fc8e0;--mapbg:#14232c;--road:#22343f;--water:#1b3a52;--park:#1d3a2b;--chip:#1b3340;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.4 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+#app{height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;position:relative;background:var(--bg)}
+header{padding:10px 14px 8px;display:flex;flex-direction:column;gap:8px;position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:8px;font:800 24px/1 "Trebuchet MS",system-ui,sans-serif;letter-spacing:.06em;color:var(--brand2)}
+.brand span{color:var(--brand)}
+.search{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0 12px;height:42px}
+.search input{flex:1;border:0;outline:0;background:none;color:var(--fg);font:inherit;min-width:0}
+#results{position:absolute;left:14px;right:14px;top:100%;margin-top:-6px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:none;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+#results button{display:flex;justify-content:space-between;width:100%;border:0;background:none;color:var(--fg);font:inherit;padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
+#mapwrap{flex:1;position:relative;overflow:hidden;min-height:160px;touch-action:none}
+#map{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+.bg{fill:var(--mapbg)}.water{stroke:var(--water);fill:none;stroke-linecap:round}.park{fill:var(--park)}
+.base{stroke:var(--road);stroke-linecap:round}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.zoom button,.fab{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.badge{position:absolute;left:10px;top:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 10px;font-size:12px;display:none}
+.badge.on{display:block}
+.rec{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--poor);margin-right:6px;animation:b 1s infinite}
+@keyframes b{50%{opacity:.2}}
+@media (prefers-reduced-motion:reduce){.rec,.pulse{animation:none}}
+.pulse{animation:p 2s infinite;transform-box:fill-box;transform-origin:center}
+@keyframes p{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.2);opacity:0}}
+#sheet{background:var(--card);border-top:1px solid var(--line);border-radius:20px 20px 0 0;margin-top:-14px;position:relative;z-index:3;max-height:46vh;display:flex;flex-direction:column}
+.tabs{display:flex;padding:8px 10px 0;gap:4px}
+.tabs button{flex:1;border:0;background:none;color:var(--mut);font:inherit;font-weight:700;padding:10px 4px;border-bottom:3px solid transparent}
+.tabs button.on{color:var(--brand);border-color:var(--brand)}
+.panel{display:none;padding:12px 16px 16px;overflow:auto}
+.panel.on{display:block}
+.aqi{display:flex;align-items:center;gap:14px}
+.num{font:800 44px/1 "Trebuchet MS",system-ui,sans-serif;min-width:84px;text-align:center;padding:8px 10px;border-radius:16px;color:#fff}
+.mut{color:var(--mut);font-size:13px}
+.legend{display:flex;justify-content:space-between;gap:6px;margin:12px 0 4px;font-size:12px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chips button{border:0;background:var(--chip);color:var(--fg);padding:7px 12px;border-radius:999px;font:inherit;font-size:13px}
+.seg{display:flex;background:var(--chip);border-radius:12px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;border:0;background:none;color:var(--fg);padding:8px;border-radius:10px;font:inherit;font-weight:700}
+.seg button.on{background:var(--brand);color:#fff}
+.route{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;border:2px solid var(--line);background:none;color:var(--fg);border-radius:14px;padding:10px 12px;margin-bottom:8px;font:inherit}
+.route.on{border-color:var(--brand)}
+.route b{font-size:16px}
+.tag{font-size:12px;font-weight:700;border-radius:8px;padding:3px 8px;color:#fff}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stats div{background:var(--chip);border-radius:12px;padding:10px;text-align:center}
+.stats b{display:block;font-size:20px}
+.big{width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;font-size:16px;color:#fff;background:var(--brand)}
+.big.stop{background:var(--poor)}
+.ble{display:inline-flex;align-items:center;gap:6px;font-size:13px;background:var(--chip);border-radius:999px;padding:4px 10px}
+.ble i{width:8px;height:8px;border-radius:50%;background:var(--good)}
+:focus-visible{outline:3px solid var(--brand2);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M3 16 L17 3 L15 13 L29 11 L14 29 L16 19 Z" fill="var(--brand)"/><path d="M17 3 L15 13 L29 11 Z" fill="var(--brand2)"/></svg>
+    Air<span>Pox</span>
+  </div>
+  <div class="search"><span aria-hidden="true">🔍</span><input id="q" placeholder="Search a place or tap the map" autocomplete="off" aria-label="Search places"></div>
+  <div id="results"></div>
+</header>
+<div id="mapwrap">
+  <svg id="map" role="img" aria-label="Air quality map"></svg>
+  <div class="zoom"><button id="zi" aria-label="Zoom in">+</button><button id="zo" aria-label="Zoom out">−</button><button id="loc" aria-label="Center on me">◎</button></div>
+  <div class="badge" id="badge"><span class="rec"></span>Recording</div>
+</div>
+<section id="sheet">
+  <div class="tabs" role="tablist">
+    <button class="on" data-t="explore">Explore</button>
+    <button data-t="route">Route</button>
+    <button data-t="drive">Contribute</button>
+  </div>
+  <div class="panel on" id="p-explore">
+    <div class="aqi"><div class="num" id="exNum">--</div><div><b id="exLbl">Loading</b><div class="mut" id="exTip"></div></div></div>
+    <div class="legend"><span><i style="background:var(--good)"></i>Good</span><span><i style="background:var(--mod)"></i>Moderate</span><span><i style="background:var(--poor)"></i>Poor</span><span><i style="background:var(--vp)"></i>Very poor</span></div>
+    <div class="mut" id="tapInfo">Tap anywhere on the map to read the air quality there.</div>
+    <div class="chips" id="chips"></div>
+  </div>
+  <div class="panel" id="p-route">
+    <div class="seg" id="mode"><button class="on" data-m="walk">🚶 Walk</button><button data-m="bike">🚲 Bike</button></div>
+    <div id="routeBody" class="mut">Pick a destination in the search bar or tap the map to compare the fastest and cleanest routes.</div>
+  </div>
+  <div class="panel" id="p-drive">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b>Volunteer driver</b><span class="ble"><i></i>Sensor connected (BLE)</span></div>
+    <div class="mut">Mount your AirPox sensor on your EV and record while you drive. Every kilometer you map earns civic points.</div>
+    <div class="stats"><div><b id="dKm">0.0</b><span class="mut">km mapped</span></div><div><b id="dAqi">--</b><span class="mut">current AQI</span></div><div><b id="dPts">0</b><span class="mut">civic pts</span></div></div>
+    <button class="big" id="rec">Start recording</button>
+  </div>
+</section>
+</div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+let seed=11;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+const COLS=11,ROWS=14,W=1000,H=1200,KM=0.004;
+const lvl=a=>a<=50?{c:"#3aa655",n:"Good",t:"Air is clean. Great time to be outside."}:a<=100?{c:"#f5b82e",n:"Moderate",t:"Fine for most people. Sensitive groups may want to ease up."}:a<=150?{c:"#e5484d",n:"Poor",t:"Avoid long exercise here. Try a cleaner street."}:{c:"#7a1f5c",n:"Very poor",t:"Avoid this area if you can."};
+const hot=[[350,380,110,130],[700,250,90,110],[620,900,100,140],[200,1000,60,90],[300,800,-35,100],[780,600,-30,90]];
+const aqiAt=(x,y)=>Math.round(Math.max(12,38+hot.reduce((s,h)=>s+h[2]*Math.exp(-((x-h[0])**2+(y-h[1])**2)/(2*h[3]**2)),0)+Math.sin(x*.05)*Math.cos(y*.04)*8+rnd()*10));
+const id=(c,r)=>r*COLS+c,N=[],E=[],adj=[];
+for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){N.push({x:60+c*88+(rnd()-.5)*26,y:60+r*80+(rnd()-.5)*24});adj.push([])}
+function link(a,b){const p=N[a],q=N[b],len=Math.hypot(p.x-q.x,p.y-q.y),e={a,b,len,aqi:aqiAt((p.x+q.x)/2,(p.y+q.y)/2),i:E.length};E.push(e);adj[a].push({to:b,e});adj[b].push({to:a,e})}
+for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(c<COLS-1&&rnd()>.07)link(id(c,r),id(c+1,r));if(r<ROWS-1&&rnd()>.07)link(id(c,r),id(c,r+1))}
+const ME=id(5,6);
+const PLACES=[["Central Park",id(3,8)],["Old Market",id(8,3)],["North Station",id(9,10)],["University",id(2,2)],["City Hospital",id(7,12)],["Riverside Plaza",id(5,9)]];
+const svg=$("#map");
+let vb={x:150,y:250,w:520};
+const aspect=()=>svg.clientHeight/svg.clientWidth||1.2;
+function setView(){const h=vb.w*aspect();vb.w=Math.max(200,Math.min(W*1.1,vb.w));vb.x=Math.max(-60,Math.min(W-vb.w+60,vb.x));vb.y=Math.max(-60,Math.min(H-h+60,vb.y));svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${h}`)}
+const line=(e,extra="")=>`<line x1="${N[e.a].x}" y1="${N[e.a].y}" x2="${N[e.b].x}" y2="${N[e.b].y}" ${extra}/>`;
+svg.innerHTML=`<rect class="bg" x="-200" y="-200" width="1500" height="1700"/>
+<path class="water" d="M390 -60 C300 300 620 500 480 800 S560 1150 620 1300" stroke-width="80"/>
+<ellipse class="park" cx="300" cy="800" rx="110" ry="80"/><ellipse class="park" cx="780" cy="600" rx="95" ry="75"/>
+<g class="base" stroke-width="11">${E.map(e=>line(e)).join("")}</g>
+<g stroke-width="6" stroke-linecap="round" opacity=".92">${E.map(e=>line(e,`stroke="${lvl(e.aqi).c}"`)).join("")}</g>
+<g id="meas"></g><g id="routes"></g><g id="pins"></g><g id="me"></g>`;
+const kmFmt=u=>(u*KM).toFixed(1);
+// routing
+function path(from,to,cost){const d=Array(N.length).fill(1e9),prev=Array(N.length).fill(null),done=Array(N.length).fill(false);d[from]=0;
+for(;;){let u=-1;for(let i=0;i<N.length;i++)if(!done[i]&&(u<0||d[i]<d[u]))u=i;if(u<0||d[u]>=1e9||u===to)break;done[u]=true;for(const {to:v,e} of adj[u]){const w=d[u]+cost(e);if(w<d[v]){d[v]=w;prev[v]=[u,e]}}}
+if(prev[to]===null&&from!==to)return null;const es=[];for(let n=to;prev[n];n=prev[n][0])es.unshift(prev[n][1]);return es}
+const stats=(es,mode)=>{const len=es.reduce((s,e)=>s+e.len,0),km=len*KM;return{es,km,min:Math.round(km/(mode==="bike"?15:5)*60),avg:Math.round(es.reduce((s,e)=>s+e.len*e.aqi,0)/len)}};
+const tag=a=>`<span class="tag" style="background:${lvl(a).c}">AQI ${a} · ${lvl(a).n}</span>`;
+let dest=null,mode="walk",sel="clean",R={};
+function setDest(n,name){dest={n,name};const f=path(ME,n,e=>e.len),c=path(ME,n,e=>e.len*Math.pow(.5+e.aqi/60,2));if(!f||!c){$("#routeBody").textContent="No route found. Try another spot.";return}
+R={fast:stats(f,mode),clean:stats(c,mode)};sel="clean";drawRoutes();renderRoute();tab("route")}
+function drawRoutes(){const g=$("#routes"),p=$("#pins");if(!dest){g.innerHTML=p.innerHTML="";return}
+const pts=es=>{let n=ME,s=`${N[ME].x},${N[ME].y}`;for(const e of es){n=e.a===n?e.b:e.a;s+=` ${N[n].x},${N[n].y}`}return s};
+const poly=(k,col,w,dash)=>`<polyline points="${pts(R[k].es)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round" ${dash?`stroke-dasharray="${dash}"`:""}/>`;
+const other=sel==="clean"?"fast":"clean";
+g.innerHTML=poly(other,"#7a8c99",7,"2 12")+poly(sel,"#fff",15)+poly(sel,sel==="clean"?"#1f7a6b":"#2b5fd9",9);
+const d=N[dest.n];p.innerHTML=`<path transform="translate(${d.x} ${d.y})" d="M0 0 C-14 -16 -18 -24 -18 -30 a18 18 0 1 1 36 0 C18 -24 14 -16 0 0Z" fill="#14566b" stroke="#fff" stroke-width="3"/><circle cx="${d.x}" cy="${d.y-30}" r="7" fill="#fff"/>`}
+function renderRoute(){if(!dest)return;const f=R.fast,c=R.clean,red=Math.max(0,Math.round((1-c.avg/f.avg)*100));
+const card=(k,t,r)=>`<button class="route ${sel===k?"on":""}" data-k="${k}"><div><b>${t}</b><div class="mut">${r.min} min · ${r.km.toFixed(1)} km</div></div>${tag(r.avg)}</button>`;
+$("#routeBody").innerHTML=`<div class="mut" style="margin-bottom:8px">To <b style="color:var(--fg)">${dest.name}</b></div>${card("clean","Cleaner route",c)}${card("fast","Fastest route",f)}<div class="mut">${red?`The cleaner route cuts your pollution exposure by about ${red}%.`:"Both routes have similar air quality."}</div>`;
+$$("#routeBody .route").forEach(b=>b.onclick=()=>{sel=b.dataset.k;drawRoutes();renderRoute()})}
+// UI
+function tab(t){$$(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$$(".panel").forEach(p=>p.classList.toggle("on",p.id==="p-"+t))}
+$$(".tabs button").forEach(b=>b.onclick=()=>tab(b.dataset.t));
+$$("#mode button").forEach(b=>b.onclick=()=>{mode=b.dataset.m;$$("#mode button").forEach(x=>x.classList.toggle("on",x===b));if(dest)setDest(dest.n,dest.name)});
+$("#chips").innerHTML=PLACES.map((p,i)=>`<button data-i="${i}">${p[0]}</button>`).join("");
+$$("#chips button").forEach(b=>b.onclick=()=>{const p=PLACES[b.dataset.i];setDest(p[1],p[0])});
+const here=aqiAt(N[ME].x,N[ME].y),L=lvl(here);$("#exNum").textContent=here;$("#exNum").style.background=L.c;$("#exLbl").textContent=`${L.n} air near you`;$("#exTip").textContent=L.t;
+$("#me").innerHTML=`<circle class="pulse" cx="${N[ME].x}" cy="${N[ME].y}" r="14" fill="#2b6cf0"/><circle cx="${N[ME].x}" cy="${N[ME].y}" r="9" fill="#2b6cf0" stroke="#fff" stroke-width="3.5"/>`;
+const q=$("#q"),res=$("#results");
+q.oninput=()=>{const v=q.value.trim().toLowerCase(),m=PLACES.filter(p=>p[0].toLowerCase().includes(v));if(!v||!m.length){res.style.display="none";return}
+res.innerHTML=m.map(p=>`<button data-n="${p[1]}" data-t="${p[0]}"><span>${p[0]}</span><span class="mut">${kmFmt(Math.hypot(N[p[1]].x-N[ME].x,N[p[1]].y-N[ME].y))} km</span></button>`).join("");res.style.display="block";
+$$("#results button").forEach(b=>b.onclick=()=>{res.style.display="none";q.value=b.dataset.t;setDest(+b.dataset.n,b.dataset.t);q.blur()})};
+// map gestures
+const ptrs=new Map();let moved=0,pinch=0;
+const toWorld=(cx,cy)=>{const r=svg.getBoundingClientRect(),h=vb.w*aspect();return{x:vb.x+(cx-r.left)/r.width*vb.w,y:vb.y+(cy-r.top)/r.height*h}};
+function zoom(f,cx,cy){const o=toWorld(cx,cy);vb.w*=f;const n=vb.w*aspect();const r=svg.getBoundingClientRect();vb.x=o.x-(cx-r.left)/r.width*vb.w;vb.y=o.y-(cy-r.top)/r.height*n;setView()}
+svg.onpointerdown=e=>{svg.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=0;pinch=0};
+svg.onpointermove=e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;moved+=Math.abs(dx)+Math.abs(dy);
+if(ptrs.size===1){const r=svg.getBoundingClientRect();vb.x-=dx/r.width*vb.w;vb.y-=dy/r.width*vb.w;setView()}
+else if(ptrs.size===2){p.x=e.clientX;p.y=e.clientY;const [a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch)zoom(pinch/d,(a.x+b.x)/2,(a.y+b.y)/2);pinch=d}
+p.x=e.clientX;p.y=e.clientY};
+svg.onpointerup=e=>{if(ptrs.size===1&&moved<8)tap(e.clientX,e.clientY);ptrs.delete(e.pointerId);pinch=0};
+svg.onpointercancel=e=>{ptrs.delete(e.pointerId)};
+svg.onwheel=e=>{e.preventDefault();zoom(e.deltaY>0?1.15:.87,e.clientX,e.clientY)};
+$("#zi").onclick=()=>{const r=svg.getBoundingClientRect();zoom(.75,r.left+r.width/2,r.top+r.height/2)};
+$("#zo").onclick=()=>{const r=svg.getBoundingClientRect();zoom(1.33,r.left+r.width/2,r.top+r.height/2)};
+const center=(x,y)=>{vb.x=x-vb.w/2;vb.y=y-vb.w*aspect()/2;setView()};
+$("#loc").onclick=()=>center(N[ME].x,N[ME].y);
+function tap(cx,cy){const w=toWorld(cx,cy);let b=0,bd=1e9;N.forEach((n,i)=>{const d=Math.hypot(n.x-w.x,n.y-w.y);if(d<bd){bd=d;b=i}});const a=aqiAt(w.x,w.y),l=lvl(a);
+$("#tapInfo").innerHTML=`<b style="color:var(--fg)">AQI ${a} · ${l.n}</b> at this spot. ${l.t} <button class="chips" style="all:unset;color:var(--brand);font-weight:700;cursor:pointer" id="goHere">Route here</button>`;
+$("#goHere").onclick=()=>setDest(b,"Dropped pin");tab("explore")}
+// volunteer driving
+let timer=null,km=0,pts=0,cur=ME,last=null;const seen=new Set();
+function step(){const o=adj[cur].filter(x=>x.e!==last);const pick=(o.length?o:adj[cur]).sort((a,b)=>(seen.has(a.e.i)-seen.has(b.e.i))||rnd()-.5)[0];last=pick.e;cur=pick.to;
+km+=pick.e.len*KM;if(!seen.has(pick.e.i)){pts+=Math.round(pick.e.len*KM*40);seen.add(pick.e.i)}
+$("#meas").innerHTML=[...seen].map(i=>line(E[i],`stroke="#fff" stroke-width="2" stroke-dasharray="3 5" opacity=".95"`)).join("");
+$("#me").innerHTML=`<circle cx="${N[cur].x}" cy="${N[cur].y}" r="11" fill="#14566b" stroke="#fff" stroke-width="4"/>`;
+$("#dKm").textContent=km.toFixed(1);$("#dPts").textContent=pts;const a=pick.e.aqi;$("#dAqi").textContent=a;$("#dAqi").style.color=lvl(a).c;center(N[cur].x,N[cur].y)}
+$("#rec").onclick=()=>{const b=$("#rec");if(timer){clearInterval(timer);timer=null;b.textContent="Resume recording";b.classList.remove("stop");$("#badge").classList.remove("on")}else{timer=setInterval(step,650);b.textContent="Pause recording";b.classList.add("stop");$("#badge").classList.add("on");vb.w=380;setView()}};
+addEventListener("resize",setView);setView();center(N[ME].x,N[ME].y);
+</script>
+</body>
+</html>
